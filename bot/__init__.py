@@ -5,13 +5,10 @@ from importlib import import_module
 from redis import Redis
 
 
-def strip_prefix(s, prefix):
-    return s[len(prefix):]
-
-
 class HackWeek(discord.Client):
     """
-    Subclass of discord client (with a commands dict).
+    Subclass of Discord Client, with a collection of commands
+    and a connection to a Redis instance.
     """
 
     def __init__(self, *args, **kwargs):
@@ -38,7 +35,7 @@ class HackWeek(discord.Client):
 
 def create_bot() -> discord.Client:
     """
-    Robot factory.
+    Robot factory. 🤖
 
     No but seriously, this is a factory to create instances of our bot.
     """
