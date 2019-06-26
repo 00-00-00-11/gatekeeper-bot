@@ -36,5 +36,7 @@ async def create_role_named(bot, message):
 
 
 commands = {
-    "gk create role": create_role_named,
+    "on_message": {
+        "gk create role named": create_role_named,
+    },
 }

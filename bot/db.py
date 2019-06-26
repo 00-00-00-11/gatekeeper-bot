@@ -1,7 +1,7 @@
 from bot.utils import request_answer, Permission
 
 
-def create_permset(db, role, name: str, permissions: list):
+def create_permset(db, role, name: str, permissions: list) -> (bool, str):
     """
     Create a permission set entry in the database.
     """
@@ -9,9 +9,25 @@ def create_permset(db, role, name: str, permissions: list):
     key = f"guild:{role.guild.id}:role:{role.id}:permset:{name}"
 
     if db.exists(key):
-        return
+        return False, "Permset entry already exists"
 
     db.sadd(key, *[perm.value for perm in permissions])
+    return True, "Created permsets"
+
+
+def edit_permset(db, role, name: str, permissions: list) -> bool:
+    """
+    Modify a permission set entry in the database.
+    """
+
+    key = f"guild:{role.guild.id}:role:{role.id}:permset:{name}"
+
+    if not db.exists(key):
+        return False, "Permset does not exist"
+
+    db.delete(key)
+    db.sadd(key, *[perm.value for perm in permissions])
+    return True, "Permset configured"
 
 
 def create_role(db, role, user):

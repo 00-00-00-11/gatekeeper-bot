@@ -19,6 +19,12 @@ class Permission(Enum):
             Permission.INVITE_USERS,
             Permission.REMOVE_USERS, ]
 
+    @staticmethod
+    def default() -> list:
+        return [
+            Permission.INVITE_USERS,
+            Permission.CREATE_AND_DELETE, ]
+
 
 async def request_answer(
         bot,

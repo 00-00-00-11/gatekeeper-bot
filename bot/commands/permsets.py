@@ -1,25 +1,38 @@
 import re
 
-from bot.db import create_permset
+from discord.utils import find
+
+from bot.db import create_permset, edit_permset
 from bot.utils import request_answer
 from bot.utils import Permission
 
 
-async def create_permset_for(bot, message):
+async def create_permset_named(bot, message):
     """
     Create a permset for one or more role.
     """
 
-    permissions = []
-
-    match = re.search(r"named (\S+)", message.content)
+    match = re.search(r"named (\S+) for (.+$)", message.content)
     if not match:
         await message.channel.send(
-            "Please provide a name.\n\n`gk create permset for <role> named <name>`")
+            "Invalid command.\n\n`gk create permset named <name> for <role> `")
         return
 
     name = match.group(1)
     name = re.sub(r"\ ", "-", re.sub(r"[^a-zA-Z0-9_\ ]", "", name))
+    role_name = match.group(2).lower()
+    role = find(lambda r: r.name.lower() == role_name, message.guild.roles)
+    if not role:
+        await message.channel.send(
+            f"No role named `{role_name}` was found.")
+        return
+
+    result, response = create_permset(bot.db, role, name, Permission.default())
+    if not result:
+        await message.channel.send(f"{response}! 😧")
+        return
+
+    permissions = []
 
     await request_answer(
         bot,
@@ -43,12 +56,13 @@ async def create_permset_for(bot, message):
                 lambda: permissions.append(Permission.REMOVE_USERS)), },
         destination=message.channel)
 
-    for role in message.role_mentions:
-        create_permset(bot.db, role, name, permissions)
-
-    await message.channel.send("Created permsets! 🎉")
+    if permissions:
+        result, response = edit_permset(bot.db, role, name, permissions)
+        await message.channel.send(f"{response}. {'🎉' if result else '💩'}")
 
 
 commands = {
-    "gk create permset for": create_permset_for,
+    "on_message": {
+        "gk create permset named": create_permset_named,
+    },
 }

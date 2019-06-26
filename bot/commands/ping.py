@@ -2,5 +2,7 @@ async def pong(bot, message):
     await message.channel.send("pong!")
 
 commands = {
-    "!ping": pong,
+    "on_message": {
+        "!ping": pong,
+    },
 }
