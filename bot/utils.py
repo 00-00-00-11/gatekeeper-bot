@@ -1,38 +1,109 @@
 import discord.utils
 
-from enum import Enum
 
-
-class Permission(Enum):
-    CREATE_AND_DELETE = 1
-    MODIFY_CHANNELS = 2
-    MODIFY_ROLES = 3
-    INVITE_USERS = 4
-    REMOVE_USERS = 5
-
-    @staticmethod
-    def all() -> list:
-        return [
-            Permission.CREATE_AND_DELETE,
-            Permission.MODIFY_CHANNELS,
-            Permission.MODIFY_ROLES,
-            Permission.INVITE_USERS,
-            Permission.REMOVE_USERS, ]
+class Permission:
+    def __init__(
+            self,
+            emoji: str,
+            value: int,
+            description: str = None):
+        self.emoji = emoji
+        self.value = value
+        self.description = description
 
     @staticmethod
     def default() -> list:
         return [
             Permission.INVITE_USERS,
-            Permission.CREATE_AND_DELETE, ]
+            Permission.CREATE_AND_DELETE_CHANNELS, ]
+
+    @staticmethod
+    def all() -> list:
+        return [
+            Permission.CREATE_AND_DELETE_CHANNELS,
+            Permission.MODIFY_CHANNELS,
+            Permission.MODIFY_ROLES,
+            Permission.INVITE_USERS,
+            Permission.REMOVE_USERS,
+            Permission.CREATE_PERMSETS,
+            Permission.DELETE_ROLE, ]
+
+    @staticmethod
+    def from_value(value: int):
+        value = int(value)
+        if value == 1:
+            return Permission.CREATE_AND_DELETE_CHANNELS
+        elif value == 2:
+            return Permission.MODIFY_CHANNELS
+        elif value == 3:
+            return Permission.MODIFY_ROLES
+        elif value == 4:
+            return Permission.INVITE_USERS
+        elif value == 5:
+            return Permission.REMOVE_USERS
+        elif value == 6:
+            return Permission.CREATE_PERMSETS
+        elif value == 7:
+            return Permission.DELETE_ROLE
+        else:
+            print("SOMETHING WRONG")
+
+    @staticmethod
+    def CREATE_AND_DELETE_CHANNELS():
+        return Permission(
+            "📻",
+            1,
+            description="Create and delete role specific channels.")
+
+    @staticmethod
+    def MODIFY_CHANNELS():
+        return Permission(
+            "📝",
+            2,
+            description="Modify properties of existing channels.")
+
+    @staticmethod
+    def MODIFY_ROLES():
+        return Permission(
+            "🖌",
+            3,
+            description="Modify properties of the related Discord role.")
+
+    @staticmethod
+    def INVITE_USERS():
+        return Permission(
+            "📯",
+            4,
+            description="Invite new users to the role.")
+
+    @staticmethod
+    def REMOVE_USERS():
+        return Permission(
+            "👞",
+            5,
+            description="Remove users from the role.")
+
+    @staticmethod
+    def CREATE_PERMSETS():
+        return Permission(
+            "📐",
+            6,
+            description="Create new permsets for the role.")
+
+    @staticmethod
+    def DELETE_ROLE():
+        return Permission(
+            "💣",
+            7,
+            description="Delete the entire role.")
 
 
-async def request_answer(
+async def select_permissions(
         bot,
         user,
-        question: str,
-        options: dict,
+        permissions: list,
         destination=None,
-        timeout: float = 120.0):
+        timeout: float = 120.0) -> list:
     """
     Helper method to ask a question and run callbacks for each provided answer.
 
@@ -50,11 +121,12 @@ async def request_answer(
     """
 
     # Format the body text...
-    message_body = f"{question}\n\n"
+    message_body = f"When creating the permset, what permissions would you like me to give?\n\n"
 
-    for emoji, values in options.items():
-        description = values[0]
-        message_body += f"{emoji} - {description}\n"
+    emojis = []
+    for permission in permissions:
+        emojis.append(permission().emoji)
+        message_body += f"{permission().emoji} - {permission().description}\n"
 
     message_body += f"\nType `submit` to submit.\n"
 
@@ -65,7 +137,7 @@ async def request_answer(
     # Ask the question and add placeholder reactions.
     message = await destination.send(message_body)
 
-    for emoji in options.keys():
+    for emoji in emojis:
         await message.add_reaction(emoji)
 
     # Initialize a list of results.
@@ -79,7 +151,7 @@ async def request_answer(
             check=lambda m: m.author == user and m.content == "submit")
     except TimeoutError:
         await destination.send("Request expired. 👎")
-        return
+        return None
 
     # Get the reactions made by the user,
     # store the corresponding callback function in our list of results.
@@ -87,10 +159,8 @@ async def request_answer(
     for reaction in message.reactions:
         users = await reaction.users().flatten()
         if user in users:
-            results.append(options[reaction.emoji][1])
+            results.append(permissions[emojis.index(reaction.emoji)])
 
     await destination.send("Selections confirmed! 👍")
 
-    # Run each callback.
-    for callback in results:
-        callback()
+    return results

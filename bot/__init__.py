@@ -28,7 +28,7 @@ class HackWeek(discord.Client):
                 for key, value in module.commands.items():
                     if type(value) == list:
                         try:
-                            self.commands[key].append(value)
+                            self.commands[key].extend(value)
                         except KeyError:
                             self.commands[key] = value
                     elif type(value) == dict:
