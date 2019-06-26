@@ -1,3 +1,18 @@
+import discord.utils
+
+from enum import Enum
+
+
+class Permission(Enum):
+    CREATE_AND_DELETE = 1
+    MODIFY_CHANNELS = 2
+    MODIFY_ROLES = 3
+    INVITE_USERS = 4
+    REMOVE_USERS = 5
+
+    @staticmethod
+    def all() -> list:
+        return [1, 2, 3, 4, 5]
 
 
 async def request_answer(
@@ -30,14 +45,14 @@ async def request_answer(
         description = values[0]
         message_body += f"{emoji} - {description}\n"
 
-    message_body += f"Type `submit` to submit.\n"
+    message_body += f"\nType `submit` to submit.\n"
 
     # Determine where to send messages...
     if not destination:
         destination = user
 
     # Ask the question and add placeholder reactions.
-    message = await user.send(message_body)
+    message = await destination.send(message_body)
 
     for emoji in options.keys():
         await message.add_reaction(emoji)
@@ -57,6 +72,7 @@ async def request_answer(
 
     # Get the reactions made by the user,
     # store the corresponding callback function in our list of results.
+    message = discord.utils.get(bot.cached_messages, id=message.id)
     for reaction in message.reactions:
         users = await reaction.users().flatten()
         if user in users:
