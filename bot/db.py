@@ -35,11 +35,13 @@ def check_for_perm(db, role, user, permission):
 
     # get the user's permset for that role
     user_key = f"guild:{role.guild.id}:role:{role.id}:member:{user.id}"
-    permset = db.get(user_key).decode()
+    permset = db.get(user_key)
 
     # if the user does not have a permset for the specified role, return false
     if not permset:
         return False
+
+    permset = permset.decode()
 
     # get all the permissions associated with that permset
     permset_key = f"guild:{role.guild.id}:role:{role.id}:permset:{permset}"
