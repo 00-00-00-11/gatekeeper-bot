@@ -1,13 +1,13 @@
 import re
 
-from bot.db import create_group
+from bot.db import create_permset
 from bot.utils import request_answer
 from bot.utils import Permission
 
 
-async def create_group_for(bot, message):
+async def create_permset_for(bot, message):
     """
-    Create a permissions group for one or more roles.
+    Create a permset for one or more role.
     """
 
     permissions = []
@@ -15,7 +15,7 @@ async def create_group_for(bot, message):
     match = re.search(r"named (\S+)", message.content)
     if not match:
         await message.channel.send(
-            "Please provide a name.\n\n`gk create group for <role> named <name>`")
+            "Please provide a name.\n\n`gk create permset for <role> named <name>`")
         return
 
     name = match.group(1)
@@ -24,7 +24,7 @@ async def create_group_for(bot, message):
     await request_answer(
         bot,
         message.author,
-        f"When creating the group named `{name}`\nWhat permissions would you like me to give?",
+        f"When creating the permset named `{name}`\nWhat permissions would you like me to give?",
         {
             "📻": (
                 "Create and delete channels",
@@ -44,11 +44,11 @@ async def create_group_for(bot, message):
         destination=message.channel)
 
     for role in message.role_mentions:
-        create_group(bot.db, role, name, permissions)
+        create_permset(bot.db, role, name, permissions)
 
-    await message.channel.send("Created groups! 🎉")
+    await message.channel.send("Created permsets! 🎉")
 
 
 commands = {
-    "gk create group for": create_group_for,
+    "gk create permset for": create_permset_for,
 }

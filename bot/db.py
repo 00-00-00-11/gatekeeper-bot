@@ -1,12 +1,12 @@
 from bot.utils import request_answer, Permission
 
 
-def create_group(db, role, name: str, permissions: list):
+def create_permset(db, role, name: str, permissions: list):
     """
-    Create a permissions group entry in the database.
+    Create a permission set entry in the database.
     """
 
-    key = f"guild:{role.guild}:role:{role.id}:group:{name}"
+    key = f"guild:{role.guild.id}:role:{role.id}:permset:{name}"
 
     if db.exists(key):
         return
@@ -14,17 +14,15 @@ def create_group(db, role, name: str, permissions: list):
     db.sadd(key, *[perm.value for perm in permissions])
 
 
-def create_role(db, role, user, parent_role=None):
+def create_role(db, role, user):
     """
     Create a role entry in the database.
     """
 
-    key = f"guild:{role.guild}:role:{role.id}"
+    key = f"guild:{role.guild.id}:role:{role.id}"
 
     if db.exists(key):
         return
 
-    if parent_role:
-        db.set(key, parent_role)
-
-    db.sadd(f"{key}:member:{user.id}", *Permission.all())
+    create_permset(db, role, "administrators", Permission.all())
+    db.set(f"{key}:member:{user.id}", "administrators")

@@ -12,7 +12,12 @@ class Permission(Enum):
 
     @staticmethod
     def all() -> list:
-        return [1, 2, 3, 4, 5]
+        return [
+            Permission.CREATE_AND_DELETE,
+            Permission.MODIFY_CHANNELS,
+            Permission.MODIFY_ROLES,
+            Permission.INVITE_USERS,
+            Permission.REMOVE_USERS, ]
 
 
 async def request_answer(
