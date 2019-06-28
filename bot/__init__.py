@@ -1,5 +1,7 @@
-import discord
 import os
+import sys
+import re
+import discord
 
 from importlib import import_module
 from redis import Redis
@@ -14,13 +16,27 @@ class HackWeek(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.commands = {}
-        self.db = Redis(
-            host=os.environ.get("REDIS_HOST", "localhost"),
-            port=os.environ.get("REDIS_PORT", 6379),
-            db=os.environ.get("REDIS_DB", 0),
-            password=os.environ.get("REDIS_PASSWORD", None))
+
+        try:
+            start = sys.argv.index("-d")
+        except ValueError:
+            try:
+                start = sys.argv.index("--debug")
+            except ValueError:
+                start = None
+                self.debug = int(os.environ.get("BOT_DEBUG_CHANNEL"))
+        if start:
+            self.debug = int(sys.argv[start + 1])
+
+    async def log(self, message: str):
+        print(message)
+        if self.debug:
+            channel = self.get_channel(self.debug)
+            await channel.send(message)
 
     async def on_ready(self):
+        if self.debug:
+            print("Debug mode enabled.")
         for file in os.listdir('./bot/commands'):
             if file.endswith('.py') and not file.startswith("__init__"):
                 module = import_module(
@@ -37,6 +53,7 @@ class HackWeek(discord.Client):
                                 **self.commands[key], **value}
                         except KeyError:
                             self.commands[key] = value
+        print("Logged in.")
 
     async def on_message(self, message):
         """
@@ -50,10 +67,10 @@ class HackWeek(discord.Client):
             },
         }
 
-        <COMMAND_PREFIX> represents what the users message must begin with in 
+        <COMMAND_PREFIX> represents what the users message must begin with in
         order to be recognized as a command.
 
-        <TASK> represents a function that is called when the command is 
+        <TASK> represents a function that is called when the command is
         recognized. <TASK> must have two positional arguments:
 
             bot: An instance of the bot class.
@@ -79,7 +96,7 @@ class HackWeek(discord.Client):
             ],
         }
 
-        <TASK> represents a function that is called the event is triggered. 
+        <TASK> represents a function that is called the event is triggered.
         <TASK> must have two positional arguments:
 
             bot: An instance of the bot class.
@@ -110,9 +127,9 @@ class HackWeek(discord.Client):
             }
         }
 
-        <PROP> represents the property that must be changed in order for the 
+        <PROP> represents the property that must be changed in order for the
         list of tasks to be run. It must be one of the properties listed above.
-        <TASK> represents a function that is called when the specified property 
+        <TASK> represents a function that is called when the specified property
         has been changed. <TASK> must have three positional arguments:
 
             bot: An instance of the bot class.

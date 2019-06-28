@@ -29,6 +29,9 @@ class Permset(DataSet):
     Object representing a permset database entry.
     """
 
+    def __str__(self):
+        return self.name
+
     @property
     def giveable(self):
         """
@@ -39,7 +42,8 @@ class Permset(DataSet):
         permissions = self.permissions
 
         try:
-            permissions.remove(Permission.CREATE_PERMSETS)
+            permissions.remove(Permission.MANAGE_USERS)
+            permissions.remove(Permission.MANAGE_PERMSETS)
             return permissions
         except ValueError:
             return None
@@ -50,7 +54,7 @@ class Permset(DataSet):
         Return a role this permset is related to.
         """
 
-        match = re.search(r"(*):permset:", self.key_prefix)
+        match = re.search(r"([\w\d:]+):permset:", self.key_prefix)
         return Role.get_raw(match.group(1))
 
     @property
@@ -59,26 +63,55 @@ class Permset(DataSet):
         Return all members of this permset.
         """
 
-        match = re.search(r"(*):permset:", self.key_prefix)
-        match = f"{match.group(1)}:member:*"
+        match = re.search(r"([\w\d:]+):permset:", self.key_prefix)
+        result = f"{match.group(1)}:member:*"
 
         with db_connection() as db:
             def check(result):
-                return True if db.get(result) == self.name else False
+                return True if db.get(result).decode() == self.name else False
 
-            results = filter(check, db.scan_iter(match=match))
+            results = filter(check, db.scan_iter(match=result))
 
         return [r.decode() for r in results]
 
+    def add_member(
+            self,
+            user: object) -> None:
+        """
+        Add a user to this permset.
+        """
+
+        user_key = f"{self.role.key}:member:{user.id}"
+
+        with db_connection() as db:
+            db.set(user_key, self.name)
+
+    def has_permission(self, permission: object) -> bool:
+        """
+        Check if a permset has a permission.
+        """
+
+        for my_permission in self.permissions:
+            if my_permission().value == permission.value:
+                return True
+        return False
+
     @staticmethod
     def exists(
-            role: object,
-            name: str) -> bool:
+            name: str,
+            role: object = None,
+            key: str = None) -> bool:
         """
         Check if a permset exists.
         """
 
-        key = f"{role.key}:permset:{name}"
+        if key:
+            role_key = key
+        elif role:
+            role_key = Role.get(role).key
+        else:
+            raise RuntimeError
+        key = f"{role_key}:permset:{name}"
 
         with db_connection() as db:
             return db.exists(key)
@@ -91,7 +124,7 @@ class Permset(DataSet):
         Get a Permset object by role and name.
         """
 
-        return get_raw(f"guild:{role.guild.id}:role:{role.id}:permset:{name}")
+        return Permset.get_raw(f"guild:{role.guild.id}:role:{role.id}:permset:{name}")
 
     @staticmethod
     def get_raw(
@@ -121,7 +154,8 @@ class Permset(DataSet):
         Get all Permsets for a role.
         """
 
-        match = f"{role.key}:permset:*"
+        role_key = Role.get(role).key
+        match = f"{role_key}:permset:*"
 
         with db_connection() as db:
             results = db.scan_iter(match=match)
@@ -142,7 +176,7 @@ class Permset(DataSet):
             name = db.get(
                 f"{key_prefix}member:{user.id}")
 
-        return Permset.get_raw(f"{key_prefix}permset:{name}")
+        return Permset.get_raw(f"{key_prefix}permset:{name.decode()}")
 
     @staticmethod
     def create(
@@ -154,7 +188,7 @@ class Permset(DataSet):
         Return an object representing that entry.
         """
 
-        permints = *[perm().value for perm in permissions]
+        permints = [perm().value for perm in permissions]
         key_prefix = f"guild:{role.guild.id}:role:{role.id}:permset:"
         key = f"{key_prefix}{name}"
 
@@ -162,7 +196,7 @@ class Permset(DataSet):
             if db.exists(key):
                 raise CreationError(
                     "Permission set entry already exists.")
-            db.sadd(key, permints)
+            db.sadd(key, *permints)
 
         return Permset(
             name=name,
@@ -185,7 +219,7 @@ class Permset(DataSet):
             self.name = name
 
         if permissions:
-            permints = *[perm().value for perm in permissions]
+            permints = [perm().value for perm in permissions]
             with db_connection() as db:
                 db.delete(f"{self.key_prefix}{self.name}")
                 db.sadd(f"{self.key_prefix}{self.name}", *permints)
@@ -219,7 +253,7 @@ class Role(DataSet):
 
         members = []
         for result in results:
-            match = re.search(r"*:member:(.+$)", result.decode())
+            match = re.search(r"[\w\d:]+:member:(.+$)", result.decode())
             user_id = int(match.group(1))
             members.append(user_id)
 
@@ -231,7 +265,10 @@ class Role(DataSet):
         All permsets for this role.
         """
 
-        return Permset.get_all(self)
+        with db_connection() as db:
+            results = db.scan_iter(match=f"{self.key}:permset:*")
+
+        return [Permset.get_raw(r.decode()) for r in results]
 
     def add_member(
             self,
@@ -241,7 +278,7 @@ class Role(DataSet):
         Add a user to this role under a permset by its name.
         """
 
-        if Permset.exists(self, permset):
+        if Permset.exists(permset, key=self.key):
             user_key = f"{self.key}:member:{user.id}"
 
             with db_connection() as db:
@@ -257,7 +294,7 @@ class Role(DataSet):
         Change a members permset.
         """
 
-        if Permset.exists(self, permset):
+        if Permset.exists(permset, key=self.key):
             user_key = f"{self.key}:member:{user.id}"
 
             with db_connection() as db:
@@ -267,7 +304,7 @@ class Role(DataSet):
     def check_member_for_perm(
             self,
             user: object,
-            permission: object):
+            permission: object) -> bool:
         """
         Check a user for a specific permission.
         """
@@ -276,9 +313,9 @@ class Role(DataSet):
 
         with db_connection() as db:
             permset_name = db.get(user_key).decode()
-        permset = Permset.get(self, permset_name)
+        permset = Permset.get_raw(f"{self.key}:permset:{permset_name}")
 
-        return permission in permset.permissions
+        return permset.has_permission(permission)
 
     def remove_member(
             self,
@@ -300,14 +337,14 @@ class Role(DataSet):
         """
 
         with db_connection() as db:
-            if not db.exists(key):
+            if not [r for r in db.scan_iter(match=f"{key}:*")]:
                 return None
 
         return Role(
             key=key)
 
     @staticmethod
-    def get_for(
+    def get(
             role: object) -> object:
         """
         Get a Role object for Discord role.
@@ -336,6 +373,12 @@ class Role(DataSet):
                 role,
                 "administrators",
                 Permission.all())
+
+            Permset.create(
+                role,
+                "default",
+                Permission.default())
+
             db.set(user_key, admin.name)
 
         return Role(

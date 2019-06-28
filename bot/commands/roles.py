@@ -5,28 +5,38 @@ from discord import Colour
 from discord.utils import escape_mentions
 from discord.utils import find
 
-from bot.db import create_role
-from bot.db import delete_all_members
-from bot.db import delete_all_permsets
-from bot.db import check_for_perm
+from bot.db import Role
 
 from bot.utils import Permission
+from bot.utils import find_match
 
 
 async def create_role_named(bot, message):
     """
-    Create a new role.
+    Create a role with name.
     """
 
-    match = re.search(r"named (.+$)", message.content)
+    match = find_match(message.content, only_named=True)
+
     if not match:
         await message.channel.send(
-            "Please provide a name.\n\n`gk create role named <name>`")
+            "Invalid command.\n\n`gk create role named <name>`.")
         return
 
     name = match.group(1)
 
-    # Create a new colour.
+    if find(
+            lambda r: r.name.lower() == name.lower(),
+            message.guild.roles):
+        await message.channel.send(
+            f"Role name **\"{name}\"** is taken.")
+        return
+
+    if not message.author.guild_permissions.manage_roles:
+        await message.channel.send(
+            "You are not authorized to perform this action.")
+        return
+
     hexx = "%06x" % random.randint(0, 0xFFFFFF)
     colour = Colour(int(hexx, 16))
 
@@ -35,9 +45,13 @@ async def create_role_named(bot, message):
         colour=colour,
         reason="Created for user with complex perms.")
 
-    create_role(bot.db, role, message.author)
-    await message.author.add_roles(role)
-    await message.channel.send("Created role successfully. 👍")
+    if Role.create(role, message.author):
+        await message.author.add_roles(role)
+        await message.channel.send(f"Role named **\"{name}\"** was created!")
+        return
+
+    await message.channel.send("Something went wrong...")
+    return
 
 
 async def delete_role_named(bot, message):
@@ -45,42 +59,44 @@ async def delete_role_named(bot, message):
     Delete a role by name.
     """
 
-    match = re.search(r"named (.+$)", message.content)
+    match = find_match(message.content, only_named=True)
+
     if not match:
         await message.channel.send(
-            "Please provide a name.\n\n`gk delete role named <name>`")
+            "Invalid command.\n\n`gk create role named <name>`.")
         return
 
     name = match.group(1)
 
-    role = find(lambda r: r.name == name, message.guild.roles)
+    role = find(
+        lambda r: r.name.lower() == name.lower(),
+        message.guild.roles)
 
     if not role:
-        await message.channel.send(f"No role named `{name}` was found.")
+        await message.channel.send(
+            f"No role named **\"{name}\"** was found.")
         return
 
-    if not check_for_perm(
-            bot.db,
-            role,
-            message.author,
-            Permission.DELETE_ROLE):
-        await message.channel.send("You do not have sufficient permissions to perform this action.")
+    if not message.author.guild_permissions.manage_roles:
+        await message.channel.send(
+            "You are not authorized to perform this action.")
         return
 
+    Role.get(role).delete()
     await role.delete()
-    await message.channel.send("Deleted role! 💣")
+
+    await message.channel.send(f"Role named **\"{name}\"** was deleted!")
 
 
-async def clear_role(bot, role):
+async def delete_role(bot, role):
     """
-    Clear a role from the database, removing its users and permsets.
+    Delete a role entry after its corresponding Discord role has been 
+    removed.
     """
 
-    # Delete the members in the role.
-    delete_all_members(bot.db, role)
-
-    # Delete all permsets for the role.
-    delete_all_permsets(bot.db, role)
+    role_entry = Role.get(role)
+    if role_entry:
+        role_entry.delete()
 
 
 commands = {
@@ -89,6 +105,6 @@ commands = {
         "gk delete role named": delete_role_named,
     },
     "on_guild_role_delete": [
-        clear_role,
+        delete_role,
     ]
 }
