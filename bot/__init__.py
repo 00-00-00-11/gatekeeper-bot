@@ -171,5 +171,6 @@ def create_bot() -> discord.Client:
     No but seriously, this is a factory to create instances of our bot.
     """
 
-    bot = HackWeek()
+    activity = discord.Game("gk help")
+    bot = HackWeek(activity=activity)
     return bot
