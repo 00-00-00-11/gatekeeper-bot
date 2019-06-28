@@ -1,0 +1,15 @@
+Design/
+manifests/
+
+.git/
+.gitignore
+
+*.png
+*.jpg
+*.md
+
+__pycache__
+*.pyc
+
+Dockerfile
+.dockerignore

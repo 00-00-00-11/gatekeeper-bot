@@ -7,7 +7,7 @@ from importlib import import_module
 from redis import Redis
 
 
-class HackWeek(discord.Client):
+class HackWeek(discord.AutoShardedClient):
     """
     Subclass of Discord Client, with a collection of commands
     and a connection to a Redis instance.
