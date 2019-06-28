@@ -47,6 +47,40 @@ async def invite_users(bot, message):
     await message.channel.send(f"{len(message.mentions)} were added to **\"{match.group(1)}\"**")
 
 
+async def leave_role(bot, message):
+    """
+    Leave a role.
+    """
+
+    match = re.search(r"leave (.+$)", message.content)
+
+    if not match:
+        await message.channel.send(
+            "Invalid command.\n\n`gk leave <role>")
+        return
+
+    role = find(
+        lambda r: r.name.lower() == match.group(1).lower(),
+        message.guild.roles)
+
+    if not role:
+        await message.channel.send(
+            f"No role named **\"{match.group(1)}\"** was found.")
+        return
+
+    role_entry = Role.get(role)
+
+    if not role_entry:
+        await message.channel.send(
+            f"Role named **\"{match.group(1)}\"** is a simple role.")
+        return
+
+    role_entry.remove_member(message.author)
+    await message.author.remove_roles(role)
+
+    await message.channel.send(f"Successfully left **\"{match.group(1)}\"**")
+
+
 async def kick_users(bot, message):
     """
     Kicking users from a role.
@@ -91,6 +125,7 @@ async def kick_users(bot, message):
 commands = {
     "on_message": {
         "gk invite": invite_users,
+        "gk leave": leave_role,
         "gk kick": kick_users,
     }
 }
