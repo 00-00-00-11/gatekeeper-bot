@@ -17,23 +17,6 @@ class HackWeek(discord.AutoShardedClient):
         super().__init__(*args, **kwargs)
         self.commands = {}
 
-        try:
-            start = sys.argv.index("-d")
-        except ValueError:
-            try:
-                start = sys.argv.index("--debug")
-            except ValueError:
-                start = None
-                self.debug = int(os.environ.get("BOT_DEBUG_CHANNEL"))
-        if start:
-            self.debug = int(sys.argv[start + 1])
-
-    async def log(self, message: str):
-        print(message)
-        if self.debug:
-            channel = self.get_channel(self.debug)
-            await channel.send(message)
-
     async def on_ready(self):
         if self.debug:
             print("Debug mode enabled.")

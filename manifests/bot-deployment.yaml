@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gatekeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gatekeeper
+  template:
+    metadata:
+      labels:
+        app: gatekeeper
+    spec:
+      containers:
+      - name: gatekeeper
+        image: yoiksoft/gatekeeper:latest
+        env:
+        - name: BOT_TOKEN
+          value: ${BOT_TOKEN}
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      - name: redis
+        image: redis
+        ports:
+          - containerPort: 6379
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+          - name: redis-storage
+            mountPath: "/data"
+      initContainers:
+        - name: redis-data-permissions-fix
+          image: busybox
+          command: ["/bin/chmod","-R","777","/redis-data"]
+          volumeMounts:
+            - name: redis-storage
+              mountPath: "/redis-data"
+      volumes:
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: redis-storage-claim
