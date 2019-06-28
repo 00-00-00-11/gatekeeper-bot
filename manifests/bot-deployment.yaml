@@ -17,19 +17,11 @@ spec:
         image: yoiksoft/gatekeeper:latest
         env:
         - name: BOT_TOKEN
-          value: $(BOT_TOKEN)
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
+          value: "$(BOT_TOKEN)"
       - name: redis
         image: redis
         ports:
           - containerPort: 6379
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
         volumeMounts:
           - name: redis-storage
             mountPath: "/data"

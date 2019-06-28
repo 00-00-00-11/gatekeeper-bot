@@ -18,8 +18,6 @@ class HackWeek(discord.AutoShardedClient):
         self.commands = {}
 
     async def on_ready(self):
-        if self.debug:
-            print("Debug mode enabled.")
         for file in os.listdir('./bot/commands'):
             if file.endswith('.py') and not file.startswith("__init__"):
                 module = import_module(
