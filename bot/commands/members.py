@@ -15,7 +15,7 @@ async def invite_users(bot, message):
 
     if not match:
         await message.channel.send(
-            "Invalid command.\n\n`gk invite <user mention> [<user_mention>, ...] to <role>")
+            "Invalid command.\n\n`gk invite <user mention> [<user_mention>, ...] to <role>`")
         return
 
     role = find(
@@ -57,7 +57,7 @@ async def leave_role(bot, message):
 
     if not match:
         await message.channel.send(
-            "Invalid command.\n\n`gk leave <role>")
+            "Invalid command.\n\n`gk leave <role>`")
         return
 
     role = find(
@@ -91,7 +91,7 @@ async def kick_users(bot, message):
 
     if not match:
         await message.channel.send(
-            "Invalid command.\n\n`gk kick <user mention> [<user_mention>, ...] from <role>")
+            "Invalid command.\n\n`gk kick <user mention> [<user_mention>, ...] from <role>`")
         return
 
     role = find(
