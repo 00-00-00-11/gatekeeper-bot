@@ -17,7 +17,10 @@ spec:
         image: yoiksoft/gatekeeper:latest
         env:
         - name: BOT_TOKEN
-          value: $(BOT_TOKEN)
+          valueFrom:
+            secretKeyRef:
+              name: bot-creds
+              key: bot-token
       - name: redis
         image: redis
         ports:
