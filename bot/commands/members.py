@@ -119,6 +119,7 @@ async def kick_users(bot, message):
 
     for user in message.mentions:
         role_entry.remove_member(user)
+        await user.remove_roles(role)
 
     await message.channel.send(f"{len(message.mentions)} were removed from **\"{match.group(1)}\"**")
 
