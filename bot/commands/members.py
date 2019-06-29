@@ -43,7 +43,7 @@ async def invite_users(bot, message):
 
     for user in message.mentions:
         role_entry.add_member(user, "default")
-        user.add_roles(role)
+        await user.add_roles(role)
 
     await message.channel.send(f"{len(message.mentions)} were added to **\"{match.group(1)}\"**")
 

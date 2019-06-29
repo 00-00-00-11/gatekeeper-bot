@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: gatekeeper
-        image: yoiksoft/gatekeeper:v1.0.0
+        image: yoiksoft/gatekeeper:v1.0.1
         env:
         - name: BOT_TOKEN
           valueFrom:
