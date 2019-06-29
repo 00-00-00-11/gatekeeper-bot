@@ -63,7 +63,7 @@ With that out of the way, please direct your attention to this poorly designed, 
 > `gk grant permset named <permset> for <gk role> to <user mention> [<user mention>, ...]`
 > *Grant a user a new permset status in a gk role.*
 
-[Add Gatekeeper to your server](https://discordapp.com/api/oauth2/authorize?client_id=592765377210220582&permissions=268437568&scope=bot)
+[Add Gatekeeper to your server](https://discordapp.com/api/oauth2/authorize?client_id=592765377210220582&permissions=268503104&scope=bot)
 
 Written by [Mateja Lasan](https://github.com/matootie) and [Stephen Edwards](https://github.com/sventi555)
 
